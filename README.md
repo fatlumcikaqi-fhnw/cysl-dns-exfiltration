@@ -6,6 +6,26 @@ In diesem Projekt wird untersucht, ob und unter welchen Bedingungen Daten über 
 
 Der Test wird in vier Fällen durchgeführt. Der erste Fall bildet die offene Baseline ohne NetworkPolicies. Danach werden schrittweise Egress-Beschränkungen und eine konkrete Gegenmassnahme eingeführt.
 
+## Inhaltsverzeichnis
+
+- [Baseline](#baseline)
+- [Provisionierung](#provisionierung)
+  - [Zugriff auf die Maschinen](#zugriff-auf-die-maschinen)
+  - [Prüfung der Baseline](#prüfung-der-baseline)
+    - [VM's und IP-Adressen](#vms-und-ip-adressen)
+    - [K3s](#k3s)
+    - [Basis Pakete](#basis-pakete)
+    - [CNI und Test-Pod](#cni-und-test-pod)
+    - [DNS](#dns)
+- [1. Fall: Offene Baseline ohne Egress-Beschränkung](#1-fall-offene-baseline-ohne-egress-beschränkung)
+  - [These Case 1](#these-case-1)
+- [2. Fall: Default-Deny-Egress](#2-fall-default-deny-egress)
+  - [These Case 2](#these-case-2)
+- [3. Fall: Default-Deny-Egress, nur UDP-Port 53 zum autoritativen DNS](#3-fall-default-deny-egress-nur-udp-port-53-zum-autoritativen-dns)
+  - [These Case 3](#these-case-3)
+- [4. Fall: Cilium L7-DNS (nur erlaubter Name) über Cluster-CoreDNS zur DNS-VM](#4-fall-cilium-l7-dns-nur-erlaubter-name-über-cluster-coredns-zur-dns-vm)
+  - [These Case 4](#these-case-4)
+
 ## Baseline
 
 Für die Baseline werden drei Debian-13-VMs auf SWITCHengines provisioniert:
