@@ -1,0 +1,69 @@
+---
+- name: Case 4 - cleanup existing policies
+  ansible.builtin.include_tasks: cleanup.yml
+
+- name: Case 4 - render coredns-custom ConfigMap (stub for exfil.test)
+  ansible.builtin.template:
+    src: case4-coredns-custom.yaml.j2
+    dest: /tmp/exfil-case4-coredns-custom.yaml
+    mode: "0644"
+
+- name: Case 4 - apply coredns-custom ConfigMap
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/exfil-case4-coredns-custom.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: _exfil_case4_cm
+  changed_when: "'configured' in _exfil_case4_cm.stdout or 'created' in _exfil_case4_cm.stdout"
+
+- name: Case 4 - reload kube-system CoreDNS so the stub zone is picked up
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout restart deployment/coredns
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: true
+
+- name: Case 4 - wait for kube-system CoreDNS rollout
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status deployment/coredns --timeout=120s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
+
+- name: Case 4 - render CiliumNetworkPolicy (kube-dns + L7 DNS matchName)
+  ansible.builtin.template:
+    src: case4-cilium-dns-restriction.yaml.j2
+    dest: /tmp/exfil-case4-cilium-dns-restriction.yaml
+    mode: "0644"
+
+- name: Case 4 - apply CiliumNetworkPolicy
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/exfil-case4-cilium-dns-restriction.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Case 4 - delete dns-test pod (force endpoint regeneration under new CNP)
+  ansible.builtin.command:
+    cmd: >
+      kubectl -n {{ exfil_test_namespace }} delete pod {{ exfil_test_pod_name }}
+      --ignore-not-found --grace-period=0 --force
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: true
+
+- name: Case 4 - wait for dns-test pod to be fully gone
+  ansible.builtin.command:
+    cmd: >
+      kubectl -n {{ exfil_test_namespace }} wait
+      --for=delete pod/{{ exfil_test_pod_name }} --timeout=60s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: _exfil_pod_wait_delete
+  failed_when:
+    - _exfil_pod_wait_delete.rc != 0
+    - "'NotFound' not in (_exfil_pod_wait_delete.stderr | default(''))"
+  changed_when: false
+
+- name: Case 4 - recreate dns-test pod via exfil_test_pod role
+  ansible.builtin.include_role:
+    name: exfil_test_pod

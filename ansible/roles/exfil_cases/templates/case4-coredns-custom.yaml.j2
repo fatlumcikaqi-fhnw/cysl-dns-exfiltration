@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  exfil.test.server: |
+    exfil.test:53 {
+        errors
+        cache 30
+        forward . {{ hostvars[groups['dns'] | first].ansible_host }}
+    }

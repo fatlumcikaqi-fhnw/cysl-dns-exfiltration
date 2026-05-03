@@ -1,0 +1,7 @@
+# Ein Server-Block auf :53 — zuerst autoritative Zone, Rest forward
+.:53 {
+    file /etc/coredns/zones/db.{{ coredns_zone }} {{ coredns_zone }}
+    forward . 8.8.8.8 8.8.4.4
+    log
+    errors
+}

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ exfil_test_namespace }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ exfil_test_pod_name }}
+  namespace: {{ exfil_test_namespace }}
+  labels:
+    app: {{ exfil_test_pod_name }}
+spec:
+  containers:
+  - name: {{ exfil_test_container.name }}
+    image: {{ exfil_test_container.image }}
+    command: {{ exfil_test_container.command | to_json }}

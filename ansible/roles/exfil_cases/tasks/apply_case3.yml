@@ -1,0 +1,15 @@
+---
+- name: Case 3 - cleanup existing policies
+  ansible.builtin.include_tasks: cleanup.yml
+
+- name: Case 3 - render allow-dns-UDP-53 egress NetworkPolicy
+  ansible.builtin.template:
+    src: case3-allow-dns-egress.yaml.j2
+    dest: /tmp/exfil-case3-allow-dns-egress.yaml
+    mode: "0644"
+
+- name: Case 3 - apply allow-dns-UDP-53 egress NetworkPolicy
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/exfil-case3-allow-dns-egress.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml

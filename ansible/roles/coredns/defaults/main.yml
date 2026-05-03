@@ -1,0 +1,6 @@
+---
+# coredns_version → group_vars/all.yml
+
+# Autoritative Zone für spätere DNS-/Exfil-Tests (Plan Abschnitt 1+)
+coredns_zone: "exfil.test"
+coredns_ns_name: "ns1"

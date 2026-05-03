@@ -1,0 +1,23 @@
+- name: Remove all Kubernetes NetworkPolicies in exfil-test
+  ansible.builtin.command:
+    cmd: kubectl delete netpol -n exfil-test --all --ignore-not-found
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: exfil_cleanup_netpol
+  changed_when: "' deleted' in ((exfil_cleanup_netpol.stdout | default('')) ~ (exfil_cleanup_netpol.stderr | default('')))"
+
+- name: Remove all CiliumNetworkPolicies in exfil-test
+  ansible.builtin.command:
+    cmd: kubectl delete cnp -n exfil-test --all --ignore-not-found
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: exfil_cleanup_cnp
+  changed_when: "' deleted' in ((exfil_cleanup_cnp.stdout | default('')) ~ (exfil_cleanup_cnp.stderr | default('')))"
+
+- name: Remove all CiliumClusterwideNetworkPolicies
+  ansible.builtin.command:
+    cmd: kubectl delete ccnp --all --ignore-not-found
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: exfil_cleanup_ccnp
+  changed_when: "' deleted' in ((exfil_cleanup_ccnp.stdout | default('')) ~ (exfil_cleanup_ccnp.stderr | default('')))"

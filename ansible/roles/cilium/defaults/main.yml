@@ -1,0 +1,3 @@
+---
+# Default resolves to centrally managed version from group_vars/all.yml.
+cilium_chart_version: "{{ cilium_version | default('1.17.4') }}"

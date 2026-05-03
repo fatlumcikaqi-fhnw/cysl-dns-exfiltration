@@ -1,0 +1,69 @@
+---
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy k3s agent configuration
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart k3s-agent
+
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: _k3s_agent_bin
+
+- name: Pre-download k3s binary on controller
+  ansible.builtin.get_url:
+    url: "{{ k3s_binary_url }}"
+    dest: "/tmp/k3s-{{ k3s_version }}"
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Pre-download k3s install script on controller
+  ansible.builtin.get_url:
+    url: "{{ k3s_install_script_url }}"
+    dest: "/tmp/k3s-install.sh"
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: true
+
+- name: Install k3s agent
+  when: not _k3s_agent_bin.stat.exists
+  block:
+    - name: Push k3s binary to worker
+      ansible.builtin.copy:
+        src: "/tmp/k3s-{{ k3s_version }}"
+        dest: /usr/local/bin/k3s
+        mode: "0755"
+
+    - name: Push k3s install script to worker
+      ansible.builtin.copy:
+        src: /tmp/k3s-install.sh
+        dest: /tmp/k3s-install.sh
+        mode: "0755"
+
+    - name: Run k3s install script (skip download)
+      ansible.builtin.shell:
+        cmd: >
+          INSTALL_K3S_SKIP_DOWNLOAD=true
+          INSTALL_K3S_VERSION='{{ k3s_version }}'
+          /tmp/k3s-install.sh agent {{ k3s_agent_extra_args }}
+        creates: /etc/systemd/system/k3s-agent.service
+
+- name: Enable and start k3s-agent
+  ansible.builtin.service:
+    name: k3s-agent
+    state: started
+    enabled: true

@@ -1,0 +1,111 @@
+---
+- name: Use private inventory IP for zone A/NS records
+  ansible.builtin.set_fact:
+    coredns_listen_address: "{{ ansible_host }}"
+
+- name: Ensure systemd-resolved drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure systemd-resolved does not bind stub DNS on port 53
+  ansible.builtin.copy:
+    dest: /etc/systemd/resolved.conf.d/ansible-coredns-no-stub.conf
+    mode: "0644"
+    content: |
+      [Resolve]
+      DNSStubListener=no
+  notify: Restart systemd-resolved
+
+- name: Apply systemd-resolved change before CoreDNS binds port 53
+  ansible.builtin.meta: flush_handlers
+
+- name: Create CoreDNS paths
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /etc/coredns
+    - /etc/coredns/zones
+
+- name: Set CoreDNS architecture suffix
+  ansible.builtin.set_fact:
+    _coredns_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+- name: Check if CoreDNS binary exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/coredns
+  register: _coredns_bin
+
+- name: Download CoreDNS release tarball (contains the binary)
+  ansible.builtin.get_url:
+    url: "{{ coredns_releases_download_root }}/v{{ coredns_version }}/coredns_{{ coredns_version }}_linux_{{ _coredns_arch }}.tgz"
+    dest: "/tmp/coredns_{{ coredns_version }}_{{ _coredns_arch }}.tgz"
+    mode: "0644"
+  when: not _coredns_bin.stat.exists
+
+- name: Extract CoreDNS binary from tarball into /usr/local/bin
+  ansible.builtin.unarchive:
+    src: "/tmp/coredns_{{ coredns_version }}_{{ _coredns_arch }}.tgz"
+    dest: /usr/local/bin
+    remote_src: true
+    creates: /usr/local/bin/coredns
+  when: not _coredns_bin.stat.exists
+
+- name: Ensure CoreDNS binary is executable
+  ansible.builtin.file:
+    path: /usr/local/bin/coredns
+    mode: "0755"
+
+- name: Deploy CoreDNS Corefile
+  ansible.builtin.template:
+    src: Corefile.j2
+    dest: /etc/coredns/Corefile
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart coredns
+
+- name: Deploy authoritative zone file
+  ansible.builtin.template:
+    src: db.zone.j2
+    dest: "/etc/coredns/zones/db.{{ coredns_zone }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart coredns
+
+- name: Install CoreDNS systemd unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/coredns.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=CoreDNS authoritative DNS (baseline)
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/local/bin/coredns -conf /etc/coredns/Corefile
+      Restart=on-failure
+      LimitNOFILE=1048576
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Restart coredns
+
+- name: Enable and start CoreDNS
+  ansible.builtin.systemd:
+    name: coredns
+    state: started
+    enabled: true
+    daemon_reload: true

@@ -1,0 +1,14 @@
+$ORIGIN {{ coredns_zone }}.
+$TTL 60
+@   IN SOA {{ coredns_ns_name }}.{{ coredns_zone }}. hostmaster.{{ coredns_zone }}. (
+        {{ ansible_date_time.epoch | default(1700000000) }} ; serial
+        3600       ; refresh
+        1800       ; retry
+        604800     ; expire
+        60         ; minimum
+    )
+
+    IN NS {{ coredns_ns_name }}.{{ coredns_zone }}.
+
+{{ coredns_ns_name }} IN A {{ coredns_listen_address }}
+@   IN A {{ coredns_listen_address }}

@@ -1,0 +1,22 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-only-exact-dns-name
+  namespace: {{ exfil_test_namespace }}
+spec:
+  endpointSelector:
+    matchLabels:
+      app: {{ exfil_test_pod_name }}
+
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            dns:
+              - matchName: allowed.exfil.test

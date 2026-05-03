@@ -1,0 +1,22 @@
+---
+- name: Validate selected exfil case
+  ansible.builtin.assert:
+    that:
+      - exfil_case | int in [1, 2, 3, 4]
+    fail_msg: "Unsupported exfil_case '{{ exfil_case }}'. Use one of: 1, 2, 3, 4."
+
+- name: Apply case 1
+  ansible.builtin.import_tasks: apply_case1.yml
+  when: exfil_case | int == 1
+
+- name: Apply case 2
+  ansible.builtin.import_tasks: apply_case2.yml
+  when: exfil_case | int == 2
+
+- name: Apply case 3
+  ansible.builtin.import_tasks: apply_case3.yml
+  when: exfil_case | int == 3
+
+- name: Apply case 4
+  ansible.builtin.import_tasks: apply_case4.yml
+  when: exfil_case | int == 4

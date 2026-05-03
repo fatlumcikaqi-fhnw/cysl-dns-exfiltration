@@ -1,0 +1,29 @@
+project_name = "wosm_26fs_gruppe03"
+region       = "LS"
+
+image_name            = "Debian Trixie 13 (SWITCHengines)"
+keypair_name          = "cysL-admin"
+ssh_public_key        = "meinKey"
+external_network_name = "public"
+
+private_subnet_cidr = "10.10.1.0/24"
+
+instances = {
+  cysl-controlplane = {
+    flavor_name = "c1.medium"
+    fixed_ip    = "10.10.1.10"
+    floating_ip = true
+  }
+
+  cysl-worker = {
+    flavor_name = "c1.medium"
+    fixed_ip    = "10.10.1.11"
+    floating_ip = false
+  }
+
+  cysl-coredns = {
+    flavor_name = "c1.medium"
+    fixed_ip    = "10.10.1.12"
+    floating_ip = false
+  }
+}

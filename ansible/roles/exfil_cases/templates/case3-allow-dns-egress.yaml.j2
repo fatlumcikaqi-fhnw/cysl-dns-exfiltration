@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-allow-dns-udp-53
+  namespace: {{ exfil_test_namespace }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+      to:
+        - ipBlock:
+            cidr: "{{ hostvars[groups['dns'] | first].ansible_host }}/32"

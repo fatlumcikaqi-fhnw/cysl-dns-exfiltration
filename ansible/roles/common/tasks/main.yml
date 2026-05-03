@@ -1,0 +1,21 @@
+---
+- name: Update apt package index
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+
+- name: Install base OS packages (curl for k3s install script, ca-certificates, iptables, dnsutils for dig/nslookup)
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - iptables
+      - dnsutils
+    state: present
+    lock_timeout: 300
+
+- name: Upgrade installed packages
+  ansible.builtin.apt:
+    upgrade: "yes"
+    lock_timeout: 300

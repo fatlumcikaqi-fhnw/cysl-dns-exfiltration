@@ -1,0 +1,3 @@
+---
+# Optionale Overrides — Standard siehe roles/coredns/defaults/main.yml
+# coredns_zone: "exfil.test"

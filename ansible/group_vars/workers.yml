@@ -1,0 +1,5 @@
+---
+# API des k3s-Servers — muss zu host_vars/cysl-controlplane.yml (k3s_node_ip) passen
+k3s_server_host: "{{ hostvars['cysl-controlplane']['k3s_node_ip'] }}"
+
+k3s_agent_extra_args: ""

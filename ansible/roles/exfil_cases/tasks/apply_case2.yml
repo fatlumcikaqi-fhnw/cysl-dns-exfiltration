@@ -1,0 +1,15 @@
+---
+- name: Case 2 - cleanup existing policies
+  ansible.builtin.include_tasks: cleanup.yml
+
+- name: Case 2 - render deny-all-egress NetworkPolicy
+  ansible.builtin.template:
+    src: case2-deny-all-egress.yaml.j2
+    dest: /tmp/exfil-case2-deny-all-egress.yaml
+    mode: "0644"
+
+- name: Case 2 - apply deny-all-egress NetworkPolicy
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/exfil-case2-deny-all-egress.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml

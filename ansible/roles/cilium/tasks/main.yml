@@ -1,0 +1,43 @@
+---
+- name: Ensure Cilium helm repository is configured
+  kubernetes.core.helm_repository:
+    name: cilium
+    repo_url: "{{ cilium_repo }}"
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Update helm repositories
+  ansible.builtin.command:
+    cmd: helm repo update
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Install or upgrade Cilium CNI
+  ansible.builtin.command:
+    cmd: >
+      helm upgrade --install cilium cilium/cilium
+      --namespace kube-system
+      --version {{ cilium_chart_version }}
+      --set kubeProxyReplacement=true
+      --set socketLB.enabled=true
+      --set k8sServiceHost={{ k3s_node_ip }}
+      --set k8sServicePort=6443
+      --set operator.replicas=1
+      --set l7Proxy=true
+      --set dnsProxy.enableTransparentMode=true
+      --wait
+      --timeout 5m
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for Cilium daemonset rollout
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status daemonset/cilium --timeout=300s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for Cilium operator rollout
+  ansible.builtin.command:
+    cmd: kubectl -n kube-system rollout status deployment/cilium-operator --timeout=300s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml

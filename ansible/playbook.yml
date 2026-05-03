@@ -1,0 +1,63 @@
+---
+# Baseline (Plan Abschnitt 0): OpenTofu-VMs, dann Ansible
+# - common auf allen Hosts
+# - k3s Server auf controlplane + Helm CLI
+# - k3s Agent auf Worker (Join über private API 10.10.1.10:6443)
+# - CoreDNS als autoritativer DNS auf cysl-coredns
+
+- name: Common setup on all hosts
+  hosts: all
+  become: true
+  roles:
+    - role: common
+      tags:
+        - common
+
+- name: Configure k3s control plane
+  hosts: controlplane
+  become: true
+  roles:
+    - role: k3s_server
+      tags:
+        - k3s_server
+        - k3s
+
+    - role: helm
+      tags:
+        - helm
+
+    - role: cilium
+      tags:
+        - cilium
+
+- name: Configure k3s workers
+  hosts: workers
+  become: true
+  roles:
+    - role: k3s_agent
+      tags:
+        - k3s_agent
+        - k3s
+
+- name: Authoritative DNS on CoreDNS VM
+  hosts: dns
+  become: true
+  roles:
+    - role: coredns
+      tags:
+        - dns
+        - coredns
+
+- name: Deploy DNS test pod
+  hosts: controlplane
+  become: true
+  vars_files:
+    - vars/exfil_test_values.yml
+  roles:
+    - role: exfil_test_pod
+      tags:
+        - test_pod
+
+    - role: exfil_cases
+      tags:
+        - exfil_cases

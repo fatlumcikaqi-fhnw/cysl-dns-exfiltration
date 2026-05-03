@@ -1,0 +1,25 @@
+---
+# Öffentliche IP der Controlplane — bei Floating-IP-Wechsel hier anpassen.
+# Worker/DNS: nur privat; SSH per ProxyJump über cysl-controlplane.
+
+all:
+  vars:
+    ansible_user: cysl-admin
+
+  children:
+    controlplane:
+      hosts:
+        cysl-controlplane:
+          ansible_host: 86.119.30.222
+
+    behind_bastion:
+      children:
+        workers:
+          hosts:
+            cysl-worker:
+              ansible_host: 10.10.1.11
+
+        dns:
+          hosts:
+            cysl-coredns:
+              ansible_host: 10.10.1.12

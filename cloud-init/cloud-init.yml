@@ -1,0 +1,27 @@
+#cloud-config
+# Shared cloud-init for all sites (Switch Engines, Azure, AWS, OnPrem).
+# Ensures the 'wosm-admin' user exists with sudo and both SSH public keys —
+# regardless of which default user the cloud provider creates.
+
+users:
+  - name: cysl-admin
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINQSf+ETE4F40ESdhkSe0nsFcl2AcAFm5ttNKaxQC/c6 fatlum_98@hotmail.com
+
+# Disable password authentication
+ssh_pwauth: false
+
+# Ensure sshd is configured securely
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+
+runcmd:
+  - systemctl restart ssh

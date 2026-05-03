@@ -1,0 +1,10 @@
+node-ip: "{{ k3s_node_ip }}"
+tls-san:
+  - "{{ k3s_node_ip }}"
+disable:
+  - traefik
+flannel-backend: "none"
+disable-network-policy: true
+disable-kube-proxy: true
+node-taint:
+  - "k3s-controlplane=true:NoSchedule"

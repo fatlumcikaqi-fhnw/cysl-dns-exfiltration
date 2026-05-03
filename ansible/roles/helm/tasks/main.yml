@@ -1,0 +1,31 @@
+---
+- name: Check if helm is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/helm
+  register: _helm_bin
+
+- name: Install helm
+  when: not _helm_bin.stat.exists
+  block:
+    - name: Create temp directory for helm
+      ansible.builtin.tempfile:
+        state: directory
+      register: _helm_tmp
+
+    - name: Download and extract helm
+      ansible.builtin.unarchive:
+        src: "{{ helm_url }}"
+        dest: "{{ _helm_tmp.path }}"
+        remote_src: true
+
+    - name: Install helm binary
+      ansible.builtin.copy:
+        src: "{{ _helm_tmp.path }}/linux-amd64/helm"
+        dest: /usr/local/bin/helm
+        mode: "0755"
+        remote_src: true
+
+    - name: Clean up helm temp directory
+      ansible.builtin.file:
+        path: "{{ _helm_tmp.path }}"
+        state: absent

@@ -1,0 +1,20 @@
+---
+# Zentrale Versionen und Download-URLs — hier pflegen
+k3s_version: "v1.31.5+k3s1"
+k3s_install_script_url: "https://get.k3s.io"
+k3s_binary_url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s"
+
+# Inventory-Hostname des k3s-Servers (muss mit inventory.yml übereinstimmen)
+k3s_master: cysl-controlplane
+
+# Helm
+helm_version: "3.16.3"
+helm_url: "https://get.helm.sh/helm-v{{ helm_version }}-linux-amd64.tar.gz"
+
+# Cilium
+cilium_version: "1.17.4"
+cilium_repo: "https://helm.cilium.io"
+
+# CoreDNS: ein Release = eine .tgz-Datei; darin liegt nur das Binary „coredns“ (kein zweiter Download)
+coredns_version: "1.11.3"
+coredns_releases_download_root: "https://github.com/coredns/coredns/releases/download"

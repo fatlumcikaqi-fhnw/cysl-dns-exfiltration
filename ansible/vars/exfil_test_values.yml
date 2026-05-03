@@ -1,0 +1,10 @@
+---
+# Values for exfil_test_pod role
+exfil_test_namespace: "exfil-test"
+exfil_test_pod_name: "dns-test"
+exfil_test_container:
+  name: netshoot
+  image: nicolaka/netshoot:latest
+  command:
+    - sleep
+    - infinity

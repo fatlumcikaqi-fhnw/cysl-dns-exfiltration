@@ -1,0 +1,20 @@
+---
+- name: Render exfil test manifest from template
+  ansible.builtin.template:
+    src: dns-test.yaml.j2
+    dest: /tmp/exfil-test-manifest.yaml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Apply exfil test manifest
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/exfil-test-manifest.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Wait for dns-test pod to become ready
+  ansible.builtin.command:
+    cmd: kubectl -n {{ exfil_test_namespace }} wait --for=condition=Ready pod/{{ exfil_test_pod_name }} --timeout=180s
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
