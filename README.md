@@ -321,3 +321,25 @@ Der entscheidende Punkt ist, dass im Log des autoritativen DNS-Servers kein neue
 Gleichzeitig zeigt dieser Fall eine wichtige Grenze: Cilium kann DNS-Anfragen nur dann auf Layer 7 prüfen, wenn der Verkehr über einen kontrollierten DNS-Pfad läuft, zum Beispiel über den Cluster-CoreDNS. Wird hingegen ein beliebiger externer Resolver direkt erlaubt, kann Cilium zwar den Netzwerkpfad einschränken, aber nicht automatisch verhindern, dass erlaubte DNS-Anfragen als Datenkanal missbraucht werden.
 
 Daraus folgt: Eine sichere DNS-Egress-Strategie darf nicht einfach UDP-Port 53 zu beliebigen Resolvern öffnen. Stattdessen sollte DNS-Verkehr zentral über einen kontrollierten Resolver geleitet und dort mit Cilium-DNS-Regeln eingeschränkt werden. Nur so kann verhindert werden, dass Angreifer Daten in Subdomains verstecken und über scheinbar normale DNS-Anfragen aus dem Cluster heraus übertragen.
+
+## Fazit
+
+Auf den ersten Blick könnte man annehmen, dass ein solches Projekt relativ einfach umzusetzen ist. In der Praxis zeigte sich jedoch, dass vor allem die saubere Systematisierung und Reproduzierbarkeit einen grossen Aufwand verursachen. Da jeder der vier Fälle einen eigenen Zustand der Infrastruktur und der Policies abbildet, mussten die einzelnen Szenarien sauber getrennt, wiederholbar angewendet und zuverlässig überprüft werden.
+
+Die Ergebnisse zeigen, dass DNS-basierte Exfiltration in Kubernetes-Clustern ein reales Risiko darstellen kann, wenn Egress-Regeln zu offen definiert sind. Ohne Einschränkungen kann ein Pod Daten problemlos über DNS-Anfragen nach aussen übertragen. Ein vollständiges Default-Deny-Egress verhindert diesen Kanal zwar wirksam, kann aber gleichzeitig legitime DNS-Funktionalität und damit den Betrieb von Anwendungen beeinträchtigen.
+
+Besonders kritisch ist eine einfache Ausnahme für UDP-Port 53. Wird DNS-Verkehr nur auf Port- und Ziel-IP-Ebene erlaubt, bleibt die Exfiltration weiterhin möglich, weil Kubernetes NetworkPolicies den Inhalt der DNS-Anfrage nicht prüfen. Daten können weiterhin in Subdomains versteckt werden, obwohl der ausgehende Verkehr formal eingeschränkt ist.
+
+Der Einsatz von Cilium mit L7-DNS-Regeln ermöglicht eine deutlich feinere Kontrolle. Dadurch kann DNS-Verkehr grundsätzlich erlaubt bleiben, während nur bestimmte Domainnamen zugelassen werden. Dies reduziert das Risiko von DNS-Exfiltration deutlich. Gleichzeitig entsteht dadurch zusätzlicher Konfigurations- und Betriebsaufwand, insbesondere weil der DNS-Verkehr über einen kontrollierten Resolver-Pfad geführt werden muss.
+
+Wichtig ist auch, dass DNS-Exfiltration in der Praxis nicht zwingend spezielle Tools benötigt. In diesem Projekt wurde bewusst mit `dig` gearbeitet, um zu zeigen, dass bereits einfache Standardwerkzeuge ausreichen können, um Daten über DNS-Anfragen zu übertragen. Spezialisierte Exfiltrationstools würden denselben Grundmechanismus lediglich automatisieren oder erweitern.
+
+Die Untersuchung geht davon aus, dass ein Angreifer bereits Code in einem Pod ausführen kann. Root-Rechte im gesamten Cluster sind dafür nicht zwingend notwendig. Entscheidend ist vor allem, dass der kompromittierte Pod ausgehende DNS-Anfragen senden darf. Wenn direkte DNS-Resolver über `@` oder offene UDP-53-Regeln erreichbar sind, kann dies den Exfiltrationskanal zusätzlich begünstigen.
+
+Zusammenfassend zeigt das Projekt, dass eine sichere DNS-Egress-Strategie nicht einfach darin bestehen darf, DNS komplett zu blockieren oder Port 53 pauschal zu erlauben. Sinnvoller ist ein kontrollierter Ansatz: DNS-Verkehr sollte zentral über den Cluster-DNS geleitet und dort mit feineren Regeln, beispielsweise durch Cilium-DNS-Policies, eingeschränkt werden.
+
+### Umsetzung des Projektes
+
+Die Infrastruktur wurde aus mehreren bestehenden Bestandteilen aufgebaut und für dieses Projekt angepasst. Dazu gehörten unter anderem OpenTofu-Konfigurationen, Ansible-Playbooks, Kubernetes-Ressourcen, Cilium-Policies und ein separater autoritativer DNS-Server. Diese Komponenten mussten so kombiniert werden, dass alle vier Testfälle reproduzierbar ausgeführt und überprüft werden konnten.
+
+KI wurde vor allem für die sprachliche Überarbeitung, das Strukturieren von Befehlen und die Unterstützung beim Troubleshooting verwendet. Gerade bei komplexeren Ansible- und Kubernetes-Konfigurationen kann KI hilfreich sein, um Fehler schneller einzugrenzen oder mögliche Lösungswege zu finden. Gleichzeitig zeigte sich aber auch, dass die generierten Vorschläge immer kritisch geprüft werden müssen. Besonders bei sicherheitsrelevanten Konfigurationen ist es wichtig, die Wirkung jeder Policy und jedes Befehls selbst zu verstehen und praktisch zu validieren.
